@@ -3,3 +3,6 @@ dist/
 poki-dist/
 *.zip
 *.tgz
+
+qa/
+baseline.mjs

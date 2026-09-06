@@ -14,6 +14,6 @@ Phaser 3 handles the table renderer and input. The fixed 120 Hz simulation is se
 
 ## Validation and release scope
 
-Automated physics, reachability, and production build checks are included. Browser/device visual QA and Poki Inspector validation remain release checks; this is a playable prototype, not an approved Poki submission. WebMCP read/start tools are feature-detected; no supported WebMCP validation context was available during this build.
+Automated physics, reachability, browser persistence, touch/layout, and simulated Poki lifecycle checks are included. Start the development server and run `npm run test:browser` (install Chromium and WebKit with `npx playwright install chromium webkit` if needed). See QA.md for coverage and limitations. Real iPhone/iPad hardware and live Poki Inspector ads remain release checks; this is a playable prototype, not an approved Poki submission. WebMCP read/start tools are feature-detected; no supported WebMCP validation context was available during this build.
 
 Poki integration reference: https://developers.poki.com/guide/sdk-html5
