@@ -1,39 +1,60 @@
-# Pocket Bankshot QA — 2026-09-06
+# Pocket Putt QA
 
-12 browser scenarios and 5 physics checks passed. Production build checked separately.
+## Current scope
 
-## Saves
-- A real completed room persists across reload and closing/reopening Chromium with the same browser profile.
-- A worse replay does not overwrite the best score.
-- All 18 room records load correctly.
-- Malformed JSON, invalid record types and out-of-range keys are handled safely.
-- Blocked storage does not prevent completing a room. Persistence naturally cannot survive reload if browser storage is unavailable.
-- Saves are local to the browser and site origin. They do not sync between devices or transfer from the private preview to Poki. In-progress shots are not saved.
+The star-collection prototype has been replaced by open-cup miniature golf.
+All 18 courses use shaped fairways. The input is now pull-back-and-release,
+not forward flicking. Old puzzle scores are not reused.
 
-## Phone and tablet
-- Chromium phone: 390×844 and 844×390, using browser touch input.
-- WebKit small phone: 375×667; iPad sizes: 768×1024 and 1024×768. Tap controls and synthetic touch drags exercise the WebKit event path.
-- Verified menu/table/footer bounds, touch shots, three-spark collection, wins, next room, pause/resume and console errors.
-- Rotating portrait → landscape → portrait preserves room state and allows continued touch play.
-- Reviewed screenshots of phone menus, phone landscape table and iPad landscape table.
-- Fixed clipped phone menus and off-screen tables in landscape. Added safe-area padding and larger controls.
-- This is emulation on desktop Chromium/WebKit, not validation on physical iOS hardware or the exact shipped Mobile Safari build.
+## Physics checks
 
-## Poki lifecycle
-- Routed a deterministic SDK substitute through the actual SDK loader; did not serve live advertising.
-- Loading-finished now fires when the Phaser scene is ready. Controls remain disabled until then.
-- First player input starts gameplay. Start/stop events alternate without duplicates.
-- Pause/resume and next-room transitions request commercial breaks at the return to gameplay.
-- While an ad is pending: simulation position and shot count remain fixed, game buttons/keyboard/touch cannot alter the room, and the AudioContext is suspended.
-- Ad completion restores gameplay and enabled sound. Rejected ad promises recover safely.
-- Focus loss during an ad leaves the game paused until explicit resume.
-- SDK script blocking and initialization failures still allow play.
-- Fixed returning from the room selector after a win so it restores the result screen.
-- Live ad playback, ad inventory, platform cookies and integration within a real Poki iframe still require Poki Inspector testing.
+- Putts stop, cannot be repeated while rolling, and stay within the course.
+- Predictions do not mutate live state.
+- Cups accept gentle putts immediately; fast putts can roll past.
+- Water restores the previous lie without losing the counted stroke.
+- All 18 holes are completed by routes executed through the real physics.
+- Pull-back direction, offset grabs, tiny drags, and already-sunk balls are checked.
+- Full-power shots at sampled angles stay inside every shaped fairway.
+- Every course fits portrait phone, landscape phone, tablet, and desktop dimensions.
+
+## Browser checks
+
+- Chromium desktop 1440x900, phone 390x844 and 844x390.
+- WebKit 375x667, 768x1024 and 1024x768.
+- Chromium uses browser touch events; WebKit uses browser mouse/pointer drags.
+- Menus, gameplay, and wins are screenshot-reviewed.
+- Dragging, pause/resume, open-cup wins, next-hole flow, and rotation.
+- Best scores survive reload and closing/reopening the same browser profile.
+- Worse scores do not replace records; malformed or blocked storage is handled.
+- Two-player handoff, independent stroke counts, winner, and totals.
+- Canceling a drag, grabbing off-center, and releasing outside the canvas.
+- SDK start/stop lifecycle, pending-ad input/audio freeze, recovery and failures.
+
+These are desktop-browser/emulated-device checks, not physical iPhone/iPad testing.
+Live advertising and a real Poki iframe still require Poki Inspector validation.
+Pass-and-play has no network or iMessage component. Only solo records persist;
+in-progress holes and match totals are session-only.
+
+## Extended device matrix
+
+`npm run test:devices` covers 14 configurations, each with an additional rotation:
+320x568 and 568x320 small phones, 430x932 large phones, Android-sized 360x800
+and 800x360, iPad split-screen 507x768, iPad 768x1024 and 1024x768,
+iPad Pro 1366x1024, Chrome laptop 1366x768, Firefox 1440x900 and 360x640,
+desktop WebKit 1440x900, and compact desktop 640x450 with reduced motion.
+
+The matrix checks a completed hole, stroke count, UI clipping, canvas bounds,
+last-hole selection, pause/resume, rotation, and browser errors. Chromium mobile
+cases use actual browser touch input; WebKit and Firefox use mouse/pointer input.
+Screenshots and results are in `qa/device-*.png` and `qa/device-results.json`.
+Hardware-specific Safari, stylus, and mobile-browser chrome behavior remain
+physical-device checks. There is no claim of support for every legacy browser.
+
+GitHub Actions runs the physics, browser, and device suites before deployment.
 
 ## Reproduce
-Run `npm run dev`, then `npm run test:browser`. Browser binaries: `npx playwright install chromium webkit`. Run `npm test` for physics/reachability.
 
-Local evidence is saved to `qa/` (ignored in source control). Browser harness: `tests/browser-qa.mjs`.
-
-Reference: https://developers.poki.com/guide/sdk-html5
+Run `npm run dev`, then `npm run test:browser`.
+Run `npm test` for physics and course-frame checks.
+Local screenshots and the latest result report are in `qa/` (gitignored).
+Run `npm run build` to check the production bundle.

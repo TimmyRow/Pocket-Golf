@@ -1,60 +1,221 @@
 import Phaser from 'phaser';
 import './style.css';
 import {levels} from './levels.js';
-import {createState,shoot,step,predict} from './physics.js';
+import {createState,shoot,step,pullVector} from './physics.js';
+import {drawCourse,courseView} from './render.js';
 import {initPlatform,loadingFinished,gameplay,commercial} from './platform.js';
+
 const $=id=>document.getElementById(id);
-let saved={};try{const data=JSON.parse(localStorage.getItem('pocket-bankshot-v1')||'{}');if(data&&typeof data==='object'&&!Array.isArray(data))for(let i=0;i<levels.length;i++)if(Number.isSafeInteger(data[i])&&data[i]>0)saved[i]=data[i];}catch{}
-let index=0,state=createState(levels[0]),mode='title',aim=null,particles=[],trail=[],accumulator=0,audio=null,sound=false,ad=false,flash=0,ready=false,hasPlayed=false,interrupted=false;
+const SAVE_KEY='pocket-putt-golf-v1';
+let saved={};
+try {
+  const data=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
+  if(data&&typeof data==='object'&&!Array.isArray(data))
+    for(let i=0;i<levels.length;i++) if(Number.isSafeInteger(data[i])&&data[i]>0) saved[i]=data[i];
+} catch {}
+let index=0,state=createState(levels[0]),mode='title',aim=null,particles=[],accumulator=0;
+let audio=null,sound=false,ad=false,ready=false,hasPlayed=false,interrupted=false;
+let playerCount=1,player=0,firstScore=null,matchScores={};
+let view={x:0,y:0,scale:1,width:600,height:650};
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-function tone(f=440,d=.08){if(!sound||ad)return;try{audio??=new AudioContext();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(f,audio.currentTime);o.frequency.exponentialRampToValueAtTime(f*.65,audio.currentTime+d);g.gain.setValueAtTime(.07,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+d);}catch{}}
-function burst(x,y,color){if(reduced)return;for(let i=0;i<16;i++){const a=i*Math.PI/8;particles.push({x,y,vx:Math.cos(a)*(50+Math.random()*100),vy:Math.sin(a)*(50+Math.random()*100),life:1,color});}}
-function hud(){const l=levels[index];$('roomNo').textContent=String(index+1).padStart(2,'0');$('roomName').textContent=l.name;$('shots').textContent=state.shots;$('par').textContent=l.par;const n=state.collected.filter(Boolean).length;$('sparks').textContent=state.collected.map(x=>x?'◆':'◇').join('');$('sparks').setAttribute('aria-label',`${n} of 3 sparks collected`);$('progress').textContent=`${Object.keys(saved).length} / 18 rooms cleared`;$('hint').textContent=state.moving?'Nice shot. Let it roll…':n===3?'Pocket open! Sink the puck.':index===6?'Red holes return your puck. Sparks stay collected.':'Drag from the puck • release to shoot';}
-function hide(){if(ad||!ready)return;if(document.hidden){pauseScreen();return;}hasPlayed=true;mode='play';$('overlay').classList.add('hidden');$('pause').textContent='Ⅱ';$('pause').setAttribute('aria-label','Pause game');gameplay(true);if(sound)audio?.resume().catch(()=>{});hud();}
-async function enterGame(reset){if(ad||!ready)return;aim=null;gameplay(false);ad=true;interrupted=false;audio?.suspend().catch(()=>{});document.querySelectorAll('button').forEach(b=>b.disabled=true);try{if(hasPlayed)await commercial();if(reset)reset();}finally{ad=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}if(document.hidden||interrupted){pauseScreen();return;}hide();}
-async function loadRoom(n){if(!Number.isInteger(n)||n<0||n>=levels.length)return;await enterGame(()=>{index=n;state=createState(levels[n]);aim=null;trail=[];particles=[];accumulator=0;});}
-function resume(){return enterGame();}
 
-function show(html,nextMode){audio?.suspend().catch(()=>{});mode=nextMode;aim=null;gameplay(false);$('overlay').innerHTML=`<div class="card">${html}</div>`;$('overlay').classList.remove('hidden');}
-function pause(){if(ad){interrupted=true;return;}if(mode!=='play')return;pauseScreen();}
-function pauseScreen(){show('<span class="eyebrow">TAKE YOUR TIME</span><h2>On a break.</h2><p>Your next good angle can wait.</p><button id="resume" class="primary">KEEP PLAYING <span>↗</span></button><button id="room-menu" class="secondary">Choose a room</button>','pause');$('resume').onclick=resume;$('room-menu').onclick=roomMenu;$('pause').textContent='▶';$('pause').setAttribute('aria-label','Resume game');}
-function roomMenu(){if(ad||!ready)return;show(`<span class="eyebrow">THE POCKET COLLECTION</span><h2>Pick your angle.</h2><p>Play any room. Beat par for gold.</p><div class="room-grid">${levels.map((l,i)=>`<button data-room="${i}" class="${saved[i]?'done ':''}${i===index?'current':''}" aria-label="Room ${i+1}: ${l.name}${saved[i]?', best '+saved[i]+' shots':''}">${String(i+1).padStart(2,'0')}</button>`).join('')}</div><button id="back" class="secondary">Back to game</button>`,'rooms');document.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>loadRoom(Number(b.dataset.room)));$('back').onclick=()=>state.won?win():resume();}
-function win(){const l=levels[index],medal=state.shots<=l.par?3:state.shots<=l.par+2?2:1;const best=Number(saved[index]);if(!best||state.shots<best)saved[index]=state.shots;try{localStorage.setItem('pocket-bankshot-v1',JSON.stringify(saved));}catch{}hud();tone(900,.24);burst(state.x,state.y,0xc5f476);const last=index===levels.length-1;show(`<span class="eyebrow">ROOM ${String(index+1).padStart(2,'0')} COMPLETE</span><div class="result-badge">${'◆'.repeat(medal)}${'◇'.repeat(3-medal)}</div><h2>${last?'Pocket perfection.':medal===3?'Beautiful bank.':'In the pocket.'}</h2><p class="result-summary">${state.shots} ${state.shots===1?'shot':'shots'} <span style="color:#73939f">/</span> par ${l.par} · best ${saved[index]}</p><p>${last?'Try earlier rooms again and collect every gold medal.':medal===3?'Right on the money. Ready for another?':'A fresh angle is waiting in the next room.'}</p><button id="next" class="primary">${last?'CHOOSE A ROOM':'NEXT ROOM'} <span>↗</span></button><button id="again" class="secondary">↻ Try for ${medal===3?'fewer shots':'gold'}</button>`,'win');$('next').onclick=()=>last?roomMenu():loadRoom(index+1,true);$('again').onclick=()=>loadRoom(index,true);}
-$('primary').onclick=()=>loadRoom(0);$('retry').onclick=()=>{if(mode==='play'||mode==='pause')loadRoom(index);};$('rooms').onclick=roomMenu;$('pause').onclick=()=>mode==='pause'?resume():pause();$('sound').onclick=()=>{if(ad)return;sound=!sound;$('sound').textContent=sound?'Sound on':'Sound off';$('sound').setAttribute('aria-label',sound?'Mute sound':'Enable sound');if(sound)tone(660);else audio?.suspend().catch(()=>{});};
-document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});window.addEventListener('blur',()=>pause());window.addEventListener('keydown',e=>{if(ad)return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.key==='Escape'||e.key.toLowerCase()==='p'){if(mode==='pause')resume();else pause();}if(e.key.toLowerCase()==='r'&&mode==='play')loadRoom(index);});
-class Table extends Phaser.Scene {
- create(){this.g=this.add.graphics();ready=true;document.querySelectorAll('button').forEach(b=>b.disabled=false);loadingFinished();this.input.on('pointerdown',p=>{if(mode!=='play'||state.moving||ad)return;if(Math.hypot(p.x-state.x,p.y-state.y)>60){$('hint').textContent='Start your drag on the white puck.';return;}aim={x:p.x,y:p.y};});this.input.on('pointermove',p=>{if(aim){aim.x=p.x;aim.y=p.y;}});this.input.on('pointerup',p=>{if(!aim)return;const dx=p.x-state.x,dy=p.y-state.y;aim=null;if(mode==='play'&&shoot(state,dx,dy)){tone(260);trail=[];hud();}});this.input.on('gameout',()=>{aim=null;});this.game.canvas.addEventListener('touchcancel',()=>{aim=null;},{passive:true});this.game.canvas.setAttribute('aria-label','Ricochet table. Drag from the white puck toward your target and release.');this.game.canvas.setAttribute('role','img');}
- update(time,delta){const dt=Math.min(delta/1000,.05);if(mode==='play'&&!ad){accumulator+=dt;while(accumulator>=1/120){const events=step(state,levels[index]);accumulator-=1/120;for(const e of events){if(e==='spark'){tone(650+state.collected.filter(Boolean).length*140);burst(state.x,state.y,0xffd76b);}if(e==='bounce')tone(180,.035);if(e==='bumper'){tone(350,.065);flash=.15;}if(e==='fall'){tone(100,.18);burst(state.x,state.y,0xf48783);}if(e==='win'){win();break;}if(e==='rest'||e==='spark'||e==='fall')hud();}if(mode!=='play')break;}if(state.moving&&!reduced){trail.push({x:state.x,y:state.y,life:1});if(trail.length>25)trail.shift();}}for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt*1.8;}particles=particles.filter(p=>p.life>0);trail.forEach(t=>t.life-=dt*2);trail=trail.filter(t=>t.life>0);flash=Math.max(0,flash-dt);this.draw(time);}
- draw(time){const g=this.g,l=levels[index],accent=[0x55e6ef,0xb398ff,0xffab65][Math.floor(index/6)],t=reduced?0:time*.001;g.clear();
- const glow=(x,y,r,c,strength=.12)=>{for(let i=4;i>0;i--){g.fillStyle(c,strength/i);g.fillCircle(x,y,r+i*5);}};
- g.fillStyle(0x10182b);g.fillRect(0,0,600,650);
- g.fillStyle(0x060b16);g.fillRoundedRect(19,24,562,611,30);
- g.fillStyle(0x33405a);g.fillRoundedRect(20,18,560,610,28);
- g.lineStyle(1,0x7a8eab,.6);g.strokeRoundedRect(21,19,558,608,28);
- g.fillStyle(0x17243a);g.fillRoundedRect(27,25,546,596,23);
- g.lineStyle(5,accent,.08);g.strokeRoundedRect(34,33,532,581,18);
- g.lineStyle(2,accent,.85);g.strokeRoundedRect(37,37,526,576,16);
- g.fillStyle(0x101e32);g.fillRoundedRect(40,40,520,570,14);
- for(let y=43;y<608;y+=3){g.lineStyle(1,0x728aac,.022);g.lineBetween(43,y,557,y);}
- g.lineStyle(1,0x567b9a,.08);for(let x=70;x<550;x+=35)g.lineBetween(x,45,x,605);for(let y=80;y<610;y+=35)g.lineBetween(45,y,555,y);
- g.lineStyle(1,accent,.09);g.strokeCircle(300,325,110);g.strokeCircle(300,325,114);g.lineBetween(55,325,545,325);g.strokeCircle(300,325,8);
- for(const [x,y] of [[30,30],[570,30],[30,617],[570,617]]){g.fillStyle(0x080f1f);g.fillCircle(x,y,4);g.lineStyle(1,0x65748d);g.lineBetween(x-2,y,x+2,y);}
- for(let i=0;i<7;i++){g.fillStyle(accent,.25+i*.08);g.fillRoundedRect(239+i*18,24,11,3,1);g.fillRoundedRect(239+i*18,619,11,3,1);}
- const open=state.collected.every(Boolean),[gx,gy]=l.goal,c=open?0x93ffc4:0x54858c;
- glow(gx,gy,29,c,open?.15:.035);g.fillStyle(0x050b17);g.fillCircle(gx,gy+4,31);g.lineStyle(5,0x2c4a56);g.strokeCircle(gx,gy,27);g.lineStyle(2,c);g.strokeCircle(gx,gy,29);g.fillStyle(0x06141d);g.fillCircle(gx,gy,24);g.lineStyle(1,c,.3);g.strokeCircle(gx,gy,19);
- for(let i=0;i<3;i++){g.lineStyle(3,state.collected[i]?0x93ffc4:0x344e60);g.beginPath();g.arc(gx,gy,34,i*Math.PI*2/3-.45,i*Math.PI*2/3+.45);g.strokePath();}
- if(open){g.lineStyle(2,c);g.beginPath();g.arc(gx,gy,22,t, t+Math.PI*.8);g.strokePath();g.lineStyle(2,0xb9ffe0);g.lineBetween(gx-7,gy,gx-1,gy+6);g.lineBetween(gx-1,gy+6,gx+9,gy-6);}else{for(let i=0;i<3;i++){g.fillStyle(state.collected[i]?0x93ffc4:0x54727d);g.fillCircle(gx+(i-1)*10,gy,3);}}
- for(const h of l.hazards){glow(h.x,h.y,h.r,0xff527d,.09);g.fillStyle(0x050916);g.fillCircle(h.x,h.y,h.r);g.lineStyle(3,0xff527d);g.strokeCircle(h.x,h.y,h.r);g.lineStyle(1,0xa22d61,.6);g.strokeCircle(h.x,h.y,h.r-6);for(let i=0;i<6;i++){const a=i*Math.PI/3;g.lineStyle(3,0xff85a5,.7);g.lineBetween(h.x+Math.cos(a)*(h.r+3),h.y+Math.sin(a)*(h.r+3),h.x+Math.cos(a)*(h.r+7),h.y+Math.sin(a)*(h.r+7));}g.lineStyle(2,0xff648f);g.lineBetween(h.x-5,h.y-5,h.x+5,h.y+5);g.lineBetween(h.x+5,h.y-5,h.x-5,h.y+5);}
- for(const w of l.walls){g.fillStyle(0x030916,.8);g.fillRoundedRect(w.x-2,w.y+7,w.w+4,w.h+4,8);g.fillStyle(0x263851);g.fillRoundedRect(w.x,w.y,w.w,w.h,6);g.lineStyle(1,0x6b85a4);g.strokeRoundedRect(w.x,w.y,w.w,w.h,6);g.fillStyle(0x3a536e);g.fillRoundedRect(w.x+3,w.y+2,w.w-6,5,3);g.fillStyle(accent,.65);if(w.w>w.h){g.fillRoundedRect(w.x+10,w.y+w.h-5,w.w-20,2,1);}else{g.fillRoundedRect(w.x+w.w-5,w.y+10,2,w.h-20,1);}for(const [x,y] of [[w.x+7,w.y+9],[w.x+w.w-7,w.y+w.h-8]]){g.fillStyle(0x101c30);g.fillCircle(x,y,2);}}
- for(const b of l.bumpers){glow(b.x,b.y,b.r,0xff8dca,.05);g.fillStyle(0x030916,.8);g.fillCircle(b.x,b.y+8,b.r+3);g.fillStyle(0x623959);g.fillCircle(b.x,b.y,b.r);g.lineStyle(3,flash?0xffe7f4:0xff87be);g.strokeCircle(b.x,b.y,b.r-1);g.fillStyle(0x283651);g.fillCircle(b.x,b.y-2,b.r-6);g.lineStyle(2,0x9caac6,.7);g.strokeCircle(b.x,b.y-3,b.r-8);g.lineStyle(3,0xf6d0e7,.7);g.beginPath();g.arc(b.x,b.y-3,b.r-9,Math.PI*1.1,Math.PI*1.65);g.strokePath();g.fillStyle(0xe474ad);g.fillCircle(b.x,b.y-2,7);g.fillStyle(0xffd8ec);g.fillCircle(b.x-2,b.y-4,3);}
- l.stars.forEach(([x,y],i)=>{if(state.collected[i])return;const bob=reduced?0:Math.sin(t*3+i)*3;glow(x,y,13,0xffc967,.1);g.fillStyle(0x000000,.2);g.fillEllipse(x,y+21,19,5);g.fillStyle(0xffb53e);g.fillPoints([{x,y:y-14+bob},{x:x+11,y:y+bob},{x,y:y+14+bob},{x:x-11,y:y+bob}],true);g.fillStyle(0xfff0af);g.fillTriangle(x,y-14+bob,x+11,y+bob,x,y-1+bob);g.fillStyle(0xffd776);g.fillTriangle(x,y-14+bob,x-11,y+bob,x,y-1+bob);g.fillStyle(0xd88027);g.fillTriangle(x,y+14+bob,x+11,y+bob,x,y-1+bob);g.lineStyle(1,0xffedba);g.lineBetween(x,y-14+bob,x+11,y+bob);});
- if(aim&&mode==='play'){const dx=aim.x-state.x,dy=aim.y-state.y,points=predict(state,l,dx,dy);points.forEach(([x,y],i)=>{g.fillStyle(accent,.8*(1-i/points.length)+.1);g.fillCircle(x,y,i<5?3:2);});const power=Math.min(1,Math.hypot(dx,dy)/190);g.lineStyle(3,0xffffff,.14);g.strokeCircle(state.x,state.y,25);g.lineStyle(4,power>.85?0xffcc73:accent);g.beginPath();g.arc(state.x,state.y,25,-Math.PI/2,-Math.PI/2+power*Math.PI*2);g.strokePath();}
- for(const p of trail){g.fillStyle(accent,.24*p.life);g.fillCircle(p.x,p.y,10*p.life);}if(!state.won){glow(state.x,state.y,13,accent,.055);if(!state.moving&&mode==='play'&&!aim){g.lineStyle(1,accent,.4);g.strokeCircle(state.x,state.y,23+(reduced?0:Math.sin(t*4)*2));}g.fillStyle(0x020815,.8);g.fillCircle(state.x,state.y+7,15);g.fillStyle(0x759da9);g.fillCircle(state.x,state.y,14);g.lineStyle(2,accent);g.strokeCircle(state.x,state.y,13);g.fillStyle(0xdceef5);g.fillCircle(state.x,state.y-3,11);g.fillStyle(0xffffff);g.fillCircle(state.x-3,state.y-6,6);g.lineStyle(1,0x6d94a5);g.strokeCircle(state.x,state.y-3,5);g.fillStyle(0x284a67);g.fillCircle(state.x,state.y-3,2);}
- for(const p of particles){g.fillStyle(p.color,p.life);g.fillCircle(p.x,p.y,3*p.life);}
-
- }
+function tone(f=440,d=.08) {
+  if(!sound||ad)return;
+  try {
+    audio??=new AudioContext(); audio.resume();
+    const o=audio.createOscillator(),g=audio.createGain();
+    o.frequency.setValueAtTime(f,audio.currentTime);
+    o.frequency.exponentialRampToValueAtTime(f*.65,audio.currentTime+d);
+    g.gain.setValueAtTime(.07,audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);
+    o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+d);
+  } catch {}
 }
-document.querySelectorAll('button').forEach(b=>b.disabled=true);
-initPlatform().then(()=>{new Phaser.Game({type:Phaser.AUTO,parent:'canvas',width:600,height:650,backgroundColor:'#233e49',scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},scene:Table,render:{antialias:true},audio:{noAudio:true}});});
-hud();
-const context=document.modelContext;if(context?.registerTool){try{context.registerTool({name:'get_bankshot_room',description:'Read the current room, shots, sparks and game state.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute:()=>({room:index+1,name:levels[index].name,shots:state.shots,sparks:state.collected.filter(Boolean).length,mode,moving:state.moving,puck:{x:state.x,y:state.y},adPending:ad})});context.registerTool({name:'start_bankshot_room',description:'Start or restart a Pocket Bankshot room from 1 to 18.',inputSchema:{type:'object',properties:{room:{type:'integer',minimum:1,maximum:18}},required:['room'],additionalProperties:false},execute:async input=>{if(!Number.isInteger(input.room)||input.room<1||input.room>18)throw new Error('Choose a room from 1 to 18.');if(ad)throw new Error('Wait for the current transition.');await loadRoom(input.room-1);return {room:index+1,mode};}});}catch{}}
+function burst() {
+  if(reduced)return;
+  for(let i=0;i<36;i++){
+    const a=i*Math.PI/18;
+    particles.push({x:state.x,y:state.y,vx:Math.cos(a)*(50+Math.random()*100),vy:Math.sin(a)*(50+Math.random()*100),life:1,color:i%2?0xffd15d:0xffffff});
+  }
+}
+function hud() {
+  const l=levels[index];
+  $('roomNo').textContent=String(index+1).padStart(2,'0');
+  $('roomName').textContent=l.name;
+  $('shots').textContent=state.shots;
+  $('par').textContent=l.par;
+  $('bestLabel').textContent=playerCount===2?'PLAYER':'BEST';
+  $('best').textContent=playerCount===2?player+1:saved[index]??'—';
+  $('turn').textContent=playerCount===2?'Player '+(player+1):'Solo';
+  const totals=Object.values(matchScores).reduce((s,v)=>[s[0]+v[0],s[1]+v[1]],[0,0]);
+  $('progress').textContent=playerCount===2?'P1 '+totals[0]+' · P2 '+totals[1]:Object.keys(saved).length+' / 18 completed';
+  const power=aim?Math.min(100,Math.round(Math.hypot(aim.start.x-aim.end.x,aim.start.y-aim.end.y)/190*100)):0;
+  $('power').value=power;
+  $('hint').textContent=aim?'Power '+power+'%':state.moving?'Rolling…':state.won?'In the cup':state.fallen?'Back at your last lie':'Your putt';
+}
+function show(html,nextMode) {
+  audio?.suspend().catch(()=>{});mode=nextMode;aim=null;gameplay(false);
+  $('overlay').innerHTML='<div class="card">'+html+'</div>';
+  $('overlay').classList.remove('hidden');
+  hud();
+}
+function hide() {
+  if(ad||!ready)return;
+  if(document.hidden){pauseScreen();return;}
+  hasPlayed=true;mode='play';$('overlay').classList.add('hidden');
+  $('pause').textContent='Ⅱ';$('pause').setAttribute('aria-label','Pause game');
+  gameplay(true);if(sound)audio?.resume().catch(()=>{});hud();
+}
+async function enterGame(reset) {
+  if(ad||!ready)return;
+  aim=null;gameplay(false);ad=true;interrupted=false;audio?.suspend().catch(()=>{});
+  document.querySelectorAll('button').forEach(b=>b.disabled=true);
+  try {if(hasPlayed)await commercial();if(reset)reset();}
+  finally {ad=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}
+  if(document.hidden||interrupted){pauseScreen();return;}
+  hide();
+}
+async function loadRoom(n) {
+  if(!Number.isInteger(n)||n<0||n>=levels.length)return;
+  await enterGame(()=>{
+    index=n;state=createState(levels[n]);player=0;firstScore=null;
+    aim=null;particles=[];accumulator=0;delete matchScores[n];
+  });
+}
+function resume(){return enterGame();}
+function pause(){if(ad){interrupted=true;return;}if(mode==='play')pauseScreen();}
+function pauseScreen(){
+  show('<span class="eyebrow">PAUSED</span><h2>Take your time.</h2><button id="resume" class="primary">Resume</button><button id="room-menu" class="secondary">Choose a hole</button><button id="new-game" class="secondary">New game</button>','pause');
+  $('resume').onclick=resume;$('room-menu').onclick=roomMenu;$('new-game').onclick=title;
+  $('pause').textContent='▶';$('pause').setAttribute('aria-label','Resume game');
+}
+function title(){
+  show('<span class="eyebrow">MINI GOLF</span><h2>Pocket Putt</h2><div class="player-options" role="group" aria-label="Number of players"><button id="solo" aria-pressed="'+(playerCount===1)+'">Solo</button><button id="duo" aria-pressed="'+(playerCount===2)+'">2 players</button></div><p class="mode-label">'+(playerCount===2?'Pass & play · Same device':'18 holes · Personal bests')+'</p><button id="primary" class="primary">Tee off</button>','title');
+  const select=n=>{playerCount=n;title();};
+  $('solo').onclick=()=>select(1);$('duo').onclick=()=>select(2);
+  $('primary').onclick=()=>{matchScores={};loadRoom(0);};
+  document.querySelectorAll('button').forEach(b=>b.disabled=!ready);
+}
+function roomMenu(){
+  if(ad||!ready)return;
+  const previous=mode;
+  show('<span class="eyebrow">THE COURSE</span><h2>Choose a hole.</h2><div class="room-grid">'+levels.map((l,i)=>'<button data-room="'+i+'" class="'+(saved[i]?'done ':'')+(i===index?'current':'')+'" aria-label="Hole '+(i+1)+': '+l.name+(saved[i]?', best '+saved[i]+' strokes':'')+'">'+String(i+1).padStart(2,'0')+'</button>').join('')+'</div><button id="back" class="secondary">Back</button>','rooms');
+  document.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>loadRoom(Number(b.dataset.room)));
+  $('back').onclick=()=>previous==='title'?title():state.won?resultScreen():resume();
+}
+function scoreName(){
+  const d=state.shots-levels[index].par;
+  return state.shots===1?'Hole in one!':d<=-2?'Eagle!':d===-1?'Birdie!':d===0?'Par.':d===1?'Bogey.':'In the cup.';
+}
+function finish(){
+  if(playerCount===1){
+    if(!saved[index]||state.shots<saved[index])saved[index]=state.shots;
+    try{localStorage.setItem(SAVE_KEY,JSON.stringify(saved));}catch{}
+  } else if(player===0) firstScore=state.shots;
+  else matchScores[index]=[firstScore,state.shots];
+  burst();tone(900,.24);hud();resultScreen();
+}
+function resultScreen(){
+  if(playerCount===2&&player===0){
+    show('<span class="eyebrow">PLAYER 1 · '+state.shots+' STROKES</span><h2>Player 2, you’re up.</h2><button id="handoff" class="primary">Player 2: tee off</button>','handoff');
+    $('handoff').onclick=()=>{player=1;state=createState(levels[index]);accumulator=0;particles=[];hide();};
+    return;
+  }
+  const last=index===levels.length-1;
+  const outcome=playerCount===1?scoreName():firstScore===state.shots?'A tie!':firstScore<state.shots?'Player 1 wins!':'Player 2 wins!';
+  const summary=playerCount===1?state.shots+' strokes · Par '+levels[index].par+' · Best '+saved[index]:'Player 1: '+firstScore+' · Player 2: '+state.shots;
+  show('<span class="eyebrow">HOLE '+(index+1)+' COMPLETE</span><h2>'+outcome+'</h2><p class="result-summary">'+summary+'</p><button id="next" class="primary">'+(last?'Scorecard':'Next hole')+'</button><button id="again" class="secondary">↻ Replay hole</button>','win');
+  $('next').onclick=()=>last?roomMenu():loadRoom(index+1);
+  $('again').onclick=()=>loadRoom(index);
+}
+$('retry').onclick=()=>{if(mode==='play'||mode==='pause')loadRoom(index);};
+$('rooms').onclick=roomMenu;
+$('pause').onclick=()=>mode==='pause'?resume():pause();
+$('sound').onclick=()=>{
+  if(ad)return;sound=!sound;$('sound').textContent=sound?'♪':'♫';
+  $('sound').setAttribute('aria-label',sound?'Mute sound':'Enable sound');
+  $('sound').setAttribute('aria-pressed',String(sound));
+  if(sound)tone(660);else audio?.suspend().catch(()=>{});
+};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
+window.addEventListener('blur',()=>pause());
+window.addEventListener('keydown',e=>{
+  if(ad)return;
+  if(e.key==='Escape'){if(aim){aim=null;hud();}else if(mode==='pause')resume();else pause();}
+  if(e.key.toLowerCase()==='r'&&mode==='play')loadRoom(index);
+});
+class Course extends Phaser.Scene {
+  create(){
+    this.g=this.add.graphics();ready=true;
+    const canvas=this.game.canvas;
+    const point=e=>{const r=canvas.getBoundingClientRect();return {x:((e.clientX-r.left)*view.width/r.width-view.x)/view.scale,y:((e.clientY-r.top)*view.height/r.height-view.y)/view.scale};};
+    const cancel=()=>{aim=null;hud();};
+    canvas.addEventListener('pointerdown',e=>{
+      if(mode!=='play'||state.moving||ad||aim||e.button!==0)return;
+      const p=point(e);
+      if(Math.hypot(p.x-state.x,p.y-state.y)>55)return;
+      e.preventDefault();canvas.setPointerCapture(e.pointerId);
+      aim={id:e.pointerId,start:p,end:p};hud();
+    });
+    canvas.addEventListener('pointermove',e=>{if(aim?.id===e.pointerId){aim.end=point(e);hud();}});
+    canvas.addEventListener('pointerup',e=>{
+      if(aim?.id!==e.pointerId)return;
+      const {dx,dy}=pullVector(aim.start,point(e));aim=null;
+      if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
+      if(mode==='play'&&!ad&&shoot(state,dx,dy))tone(260);
+      hud();
+    });
+    canvas.addEventListener('pointercancel',cancel);
+    canvas.addEventListener('lostpointercapture',cancel);
+    window.addEventListener('resize',cancel);
+    // CSS grid can resize the parent before Phaser's periodic scale check runs.
+    const resize=new ResizeObserver(()=>{
+      const r=canvas.parentElement.getBoundingClientRect();
+      if(r.width>0&&r.height>0){
+        cancel();this.scale.resize(Math.floor(r.width),Math.floor(r.height));
+        view=courseView(levels[index],this.scale.width,this.scale.height);
+        this.g.setPosition(view.x,view.y).setScale(view.scale);
+      }
+    });
+    resize.observe(canvas.parentElement);
+    this.events.once('shutdown',()=>resize.disconnect());
+    canvas.setAttribute('aria-label','Mini golf course. Drag backward from the ball and release to putt. Pull farther for more power.');
+    canvas.setAttribute('role','img');
+    loadingFinished();title();
+  }
+  update(time,delta){
+    const dt=Math.min(delta/1000,.05);
+    if(mode==='play'&&!ad){
+      accumulator+=dt;
+      while(accumulator>=1/120){
+        const events=step(state,levels[index]);accumulator-=1/120;
+        for(const e of events){
+          if(e==='bounce'||e==='bumper')tone(190,.035);
+          if(e==='fall')tone(100,.18);
+          if(e==='win'){finish();break;}
+          if(e==='rest'||e==='fall')hud();
+        }
+        if(mode!=='play')break;
+      }
+    }
+    for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;}
+    particles=particles.filter(p=>p.life>0);
+    view=courseView(levels[index],this.scale.width,this.scale.height);
+    this.g.setPosition(view.x,view.y).setScale(view.scale);
+    drawCourse(this.g,levels[index],state,aim,particles,time,reduced,player);
+  }
+}
+title();
+initPlatform().then(()=>new Phaser.Game({
+  type:Phaser.AUTO,parent:'canvas',width:600,height:650,backgroundColor:'#93c8dc',
+  scale:{mode:Phaser.Scale.RESIZE},
+  scene:Course,render:{antialias:true},audio:{noAudio:true}
+}));
+// Keep the existing automation tool names compatible; field values reflect golf.
+const context=document.modelContext;
+if(context?.registerTool)try{
+  context.registerTool({name:'get_bankshot_room',description:'Read golf hole, strokes, player, and ball state.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},
+    execute:()=>({room:index+1,name:levels[index].name,shots:state.shots,mode,moving:state.moving,puck:{x:state.x,y:state.y},adPending:ad,aiming:!!aim,player:player+1,players:playerCount,firstScore,matchScores,view})});
+  context.registerTool({name:'start_bankshot_room',description:'Start a mini golf hole from 1 to 18.',inputSchema:{type:'object',properties:{room:{type:'integer',minimum:1,maximum:18}},required:['room'],additionalProperties:false},
+    execute:async input=>{if(!Number.isInteger(input.room)||input.room<1||input.room>18)throw new Error('Choose a hole from 1 to 18.');if(ad)throw new Error('Wait for the transition.');await loadRoom(input.room-1);return {room:index+1,mode};}});
+}catch{}

@@ -1,19 +1,53 @@
-# Pocket Bankshot
+# Pocket Putt
 
-A compact 18-room ricochet puzzle. Drag from the white puck toward a target, then release. Drag farther for more power. Collect three sparks to open the green pocket. Gold: par or better; silver: within two shots of par; bronze: any finish. Bumpers bounce, red holes return the puck to its previous position, and retries are unlimited.
+A miniature golf game with 18 original shaped fairways, bank shots, bumpers, and water.
+Pull backward from the ball and release to putt. Drag distance controls power; the ball
+moves opposite the drag. Tiny drags cancel without counting a stroke. The cup is always
+open, but a fast ball can roll over it. Water returns the ball to its last lie; the
+stroke still counts, with no additional penalty.
 
-Mouse and touch; R retries; P or Escape pauses. Progress stays in browser storage. All rooms are available immediately.
+Play solo for a personal best or choose 2 players for local pass-and-play.
+Player 1 finishes each hole, then Player 2 plays the same hole from the tee.
+Both scores are shown, the lower score wins the hole, and totals accumulate.
+There is no online matchmaking or iMessage integration.
+
+Solo records live only in this browser under `pocket-putt-golf-v1`.
+Previous star-puzzle records are left untouched but are not imported into these
+different courses. Match totals last for the current session. Restarting a hole
+resets both players' results for that hole. In-progress strokes are not saved.
 
 ## Development
 
-`npm install`, then `npm run dev`. `npm test` checks physics and proves every room can be completed with collision-safe routes executed through the real simulation. `npm run build` creates the standalone static site in `dist`.
+- `npm install`
+- `npm run dev` (http://127.0.0.1:5188)
+- `npm test`
+- `npm run test:browser` with the dev server running
+- `npm run test:devices` for the 14-configuration browser/device matrix
+- `npm run build` for the static production build in `dist`
 
-`npx vite build --outDir poki-dist --mode poki` creates the Poki build with the SDK enabled by default. Package the contents of that folder with index.html at the archive root. The regular private preview avoids loading the SDK unless `?poki` is present.
+Install test browsers with `npx playwright install chromium webkit firefox`.
 
-Phaser 3 handles the table renderer and input. The fixed 120 Hz simulation is separate in src/physics.js. All visuals are functional game geometry; no external art, font, music, or paid asset dependencies. Audio is synthesized after user interaction.
+## GitHub Pages
 
-## Validation and release scope
+Repository: https://github.com/TimmyRow/Pocket-Golf
 
-Automated physics, reachability, browser persistence, touch/layout, and simulated Poki lifecycle checks are included. Start the development server and run `npm run test:browser` (install Chromium and WebKit with `npx playwright install chromium webkit` if needed). See QA.md for coverage and limitations. Real iPhone/iPad hardware and live Poki Inspector ads remain release checks; this is a playable prototype, not an approved Poki submission. WebMCP read/start tools are feature-detected; no supported WebMCP validation context was available during this build.
+The Pages workflow tests and builds each push to `main`, then deploys only `dist`.
+Set GitHub Pages to GitHub Actions. Vite uses relative asset paths so the build
+loads under `/Pocket-Golf/` without changing the Poki build.
+The device test also accepts `QA_URL` to validate a hosted build.
 
-Poki integration reference: https://developers.poki.com/guide/sdk-html5
+Phaser renders the course. A separate fixed-step simulation handles rolling and
+collisions. A single tile definition drives visual rails and collision boundaries.
+Pointer capture keeps drags attached when the pointer leaves the canvas.
+Cancel, focus loss, or resizing clears the aim without shooting.
+The course camera fits each fairway to the available screen dimensions.
+
+## Poki build
+
+`npx vite build --outDir poki-dist --mode poki` enables the SDK.
+The regular preview only enables it with `?poki`.
+Automated tests use a simulated SDK, not live advertising.
+Poki Inspector and physical iOS testing are still needed before release.
+See `QA.md` for coverage. This project is not an approved Poki submission.
+
+Reference: https://developers.poki.com/guide/sdk-html5
