@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5188 --strictPort",
     "build": "vite build",
+    "build:poki": "vite build --mode poki --outDir poki-dist",
+    "test:poki": "node tests/poki-build-qa.mjs",
     "test": "node --test tests/*.test.mjs",
     "test:browser": "node tests/browser-qa.mjs",
     "test:devices": "node tests/devices-qa.mjs"

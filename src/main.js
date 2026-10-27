@@ -118,7 +118,7 @@ function finish(){
 function resultScreen(){
   if(playerCount===2&&player===0){
     show('<span class="eyebrow">PLAYER 1 · '+state.shots+' STROKES</span><h2>Player 2, you’re up.</h2><button id="handoff" class="primary">Player 2: tee off</button>','handoff');
-    $('handoff').onclick=()=>{player=1;state=createState(levels[index]);accumulator=0;particles=[];hide();};
+    $('handoff').onclick=()=>enterGame(()=>{player=1;state=createState(levels[index]);accumulator=0;particles=[];});
     return;
   }
   const last=index===levels.length-1;
@@ -141,9 +141,16 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
 window.addEventListener('blur',()=>pause());
 window.addEventListener('keydown',e=>{
   if(ad)return;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)||(e.key===' '&&mode==='play'))e.preventDefault();
   if(e.key==='Escape'){if(aim){aim=null;hud();}else if(mode==='pause')resume();else pause();}
   if(e.key.toLowerCase()==='r'&&mode==='play')loadRoom(index);
 });
+window.addEventListener('wheel',e=>{
+  if(ad)return;
+  const card=e.target.closest?.('.card');
+  const canScroll=card&&(e.deltaY<0?card.scrollTop>0:card.scrollTop+card.clientHeight<card.scrollHeight);
+  if(!canScroll)e.preventDefault();
+},{passive:false});
 class Course extends Phaser.Scene {
   create(){
     this.g=this.add.graphics();ready=true;
@@ -207,11 +214,12 @@ class Course extends Phaser.Scene {
 }
 title();
 initPlatform().then(()=>new Phaser.Game({
-  type:Phaser.AUTO,parent:'canvas',width:600,height:650,backgroundColor:'#93c8dc',
+  type:Phaser.AUTO,parent:'canvas',width:600,height:650,backgroundColor:'#93c8dc',banner:false,
   scale:{mode:Phaser.Scale.RESIZE},
   scene:Course,render:{antialias:true},audio:{noAudio:true}
 }));
-// Keep the existing automation tool names compatible; field values reflect golf.
+// Web automation is excluded entirely from the Poki distribution.
+if(import.meta.env.VITE_POKI!=='true'){
 const context=document.modelContext;
 if(context?.registerTool)try{
   context.registerTool({name:'get_bankshot_room',description:'Read golf hole, strokes, player, and ball state.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},
@@ -219,3 +227,4 @@ if(context?.registerTool)try{
   context.registerTool({name:'start_bankshot_room',description:'Start a mini golf hole from 1 to 18.',inputSchema:{type:'object',properties:{room:{type:'integer',minimum:1,maximum:18}},required:['room'],additionalProperties:false},
     execute:async input=>{if(!Number.isInteger(input.room)||input.room<1||input.room>18)throw new Error('Choose a hole from 1 to 18.');if(ad)throw new Error('Wait for the transition.');await loadRoom(input.room-1);return {room:index+1,mode};}});
 }catch{}
+}

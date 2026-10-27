@@ -34,6 +34,15 @@ jobs:
           done
           npm run test:browser
           npm run test:devices
+      - name: Build and test Poki distribution
+        run: |
+          npm run build:poki
+          npm run test:poki
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Pocket-Golf-Poki
+          path: poki-dist/
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()
         with:

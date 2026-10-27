@@ -31,7 +31,7 @@ not forward flicking. Old puzzle scores are not reused.
 - SDK start/stop lifecycle, pending-ad input/audio freeze, recovery and failures.
 
 These are desktop-browser/emulated-device checks, not physical iPhone/iPad testing.
-Live advertising and a real Poki iframe still require Poki Inspector validation.
+Live advertising still requires a displayed-ad test in Poki Inspector.
 Pass-and-play has no network or iMessage component. Only solo records persist;
 in-progress holes and match totals are session-only.
 
@@ -51,6 +51,28 @@ Hardware-specific Safari, stylus, and mobile-browser chrome behavior remain
 physical-device checks. There is no claim of support for every legacy browser.
 
 GitHub Actions runs the physics, browser, and device suites before deployment.
+
+## Poki distribution checks (2026-10-27)
+
+All 49 local checks passed: 9 physics, 16 browser scenarios, 14 device
+configurations, and 10 compiled Poki scenarios. The compiled suite checks
+the required 16:9 embeds, small phones, tablets, clean assets without test
+hooks, SDK lifecycle sequencing, ad input blocking, fallback behavior, and
+parent-page scrolling isolation. It runs in CI before either artifact ships.
+
+A separate live Inspector smoke test uploaded the actual `poki-dist` folder,
+completed hole 1, advanced to hole 2, and paused. The Inspector event log showed
+SDK initialization, loading completion, gameplay start/stop, and a commercial
+break request followed by gameplay start/stop. Its Warnings panel reported
+no issues detected in that session. Checklist boxes were not marked as passed
+automatically, and this is not a complete manual Inspector certification.
+
+`node scripts/inspect-poki.mjs` repeats that online smoke test and uploads a
+temporary build to Poki Inspector. It does not submit an application for review.
+Results are saved in `qa/poki-inspector.json` and `.png`.
+
+`node scripts/capture-submission.mjs` captures an 800x800 thumbnail, gameplay
+screenshot, and WebM clip from the running local dev server into `release/`.
 
 ## Reproduce
 

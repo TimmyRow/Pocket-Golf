@@ -44,7 +44,10 @@ The course camera fits each fairway to the available screen dimensions.
 
 ## Poki build
 
-`npx vite build --outDir poki-dist --mode poki` enables the SDK.
+`npm run build:poki` creates a separate upload build in `poki-dist`.
+`npm run test:poki` tests that compiled build without a dev server.
+The GitHub workflow publishes it as the `Pocket-Golf-Poki` artifact.
+See [POKI-SUBMISSION.md](POKI-SUBMISSION.md) for the upload checklist and form text.
 The regular preview only enables it with `?poki`.
 Automated tests use a simulated SDK, not live advertising.
 Poki Inspector and physical iOS testing are still needed before release.
