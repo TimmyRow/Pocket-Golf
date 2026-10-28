@@ -1,6 +1,11 @@
 # Pocket Putt
 
-A miniature golf game with 18 original shaped fairways, bank shots, bumpers, and water.
+A miniature golf game with 36 original shaped fairways, bank shots, bumpers, and water.
+Three 12-hole courses have distinct palettes: Garden Club, Blue Lagoon, and
+Afterglow Links. The original 18 holes keep their layouts and saved-score IDs.
+The course picker groups holes into tabs with par and personal-best scores.
+Striped turf, raised rails, water ripples, and ball trails use the existing
+Phaser renderer; static course artwork is cached separately from animation.
 Pull backward from the ball and release to putt. Drag distance controls power; the ball
 moves opposite the drag. Tiny drags cancel without counting a stroke. The cup is always
 open, but a fast ball can roll over it. Water returns the ball to its last lie; the

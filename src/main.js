@@ -2,10 +2,15 @@ import Phaser from 'phaser';
 import './style.css';
 import {levels} from './levels.js';
 import {createState,shoot,step,pullVector} from './physics.js';
-import {drawCourse,courseView} from './render.js';
+import {drawCourse,drawTerrain,drawWater,courseView} from './render.js';
+import {themes,applyTheme} from './themes.js';
+import {createElement,FlagTriangleRight,Volume2,VolumeX,Pause,Play,RotateCcw,Trophy,ArrowRight,Grid2X2,UserRound,UsersRound,ChevronLeft} from 'lucide';
 import {initPlatform,loadingFinished,gameplay,commercial} from './platform.js';
 
 const $=id=>document.getElementById(id);
+const icons={FlagTriangleRight,Volume2,VolumeX,Pause,Play,RotateCcw,Trophy,ArrowRight,Grid2X2,UserRound,UsersRound,ChevronLeft};
+const icon=name=>createElement(icons[name],{'aria-hidden':'true',width:20,height:20,'stroke-width':2}).outerHTML;
+const setIcon=(id,name)=>{$(id).innerHTML=icon(name);};
 const SAVE_KEY='pocket-putt-golf-v1';
 let saved={};
 try {
@@ -40,6 +45,9 @@ function burst() {
 }
 function hud() {
   const l=levels[index];
+  const theme=themes[l.themeIndex];applyTheme(theme);
+  $('themeName').textContent=theme.label;
+  $('totalHoles').textContent=levels.length;
   $('roomNo').textContent=String(index+1).padStart(2,'0');
   $('roomName').textContent=l.name;
   $('shots').textContent=state.shots;
@@ -48,7 +56,7 @@ function hud() {
   $('best').textContent=playerCount===2?player+1:saved[index]??'—';
   $('turn').textContent=playerCount===2?'Player '+(player+1):'Solo';
   const totals=Object.values(matchScores).reduce((s,v)=>[s[0]+v[0],s[1]+v[1]],[0,0]);
-  $('progress').textContent=playerCount===2?'P1 '+totals[0]+' · P2 '+totals[1]:Object.keys(saved).length+' / 18 completed';
+  $('progress').textContent=playerCount===2?'P1 '+totals[0]+' · P2 '+totals[1]:Object.keys(saved).length+' / '+levels.length+' completed';
   const power=aim?Math.min(100,Math.round(Math.hypot(aim.start.x-aim.end.x,aim.start.y-aim.end.y)/190*100)):0;
   $('power').value=power;
   $('hint').textContent=aim?'Power '+power+'%':state.moving?'Rolling…':state.won?'In the cup':state.fallen?'Back at your last lie':'Your putt';
@@ -63,7 +71,7 @@ function hide() {
   if(ad||!ready)return;
   if(document.hidden){pauseScreen();return;}
   hasPlayed=true;mode='play';$('overlay').classList.add('hidden');
-  $('pause').textContent='Ⅱ';$('pause').setAttribute('aria-label','Pause game');
+  setIcon('pause','Pause');$('pause').setAttribute('aria-label','Pause game');$('pause').title='Pause game';
   gameplay(true);if(sound)audio?.resume().catch(()=>{});hud();
 }
 async function enterGame(reset) {
@@ -87,21 +95,31 @@ function pause(){if(ad){interrupted=true;return;}if(mode==='play')pauseScreen();
 function pauseScreen(){
   show('<span class="eyebrow">PAUSED</span><h2>Take your time.</h2><button id="resume" class="primary">Resume</button><button id="room-menu" class="secondary">Choose a hole</button><button id="new-game" class="secondary">New game</button>','pause');
   $('resume').onclick=resume;$('room-menu').onclick=roomMenu;$('new-game').onclick=title;
-  $('pause').textContent='▶';$('pause').setAttribute('aria-label','Resume game');
+  setIcon('pause','Play');$('pause').setAttribute('aria-label','Resume game');$('pause').title='Resume game';
 }
 function title(){
-  show('<span class="eyebrow">MINI GOLF</span><h2>Pocket Putt</h2><div class="player-options" role="group" aria-label="Number of players"><button id="solo" aria-pressed="'+(playerCount===1)+'">Solo</button><button id="duo" aria-pressed="'+(playerCount===2)+'">2 players</button></div><p class="mode-label">'+(playerCount===2?'Pass & play · Same device':'18 holes · Personal bests')+'</p><button id="primary" class="primary">Tee off</button>','title');
+  show('<span class="menu-emblem">'+icon('FlagTriangleRight')+'</span><span class="eyebrow">A LITTLE GOLF GETAWAY</span><h2>Pocket Putt</h2><div class="player-options" role="group" aria-label="Number of players"><button id="solo" aria-pressed="'+(playerCount===1)+'">'+icon('UserRound')+'Solo</button><button id="duo" aria-pressed="'+(playerCount===2)+'">'+icon('UsersRound')+'2 players</button></div><p class="mode-label">'+(playerCount===2?'Pass & play · Same device':levels.length+' holes · 3 courses')+'</p><button id="primary" class="primary">Tee off '+icon('ArrowRight')+'</button><button id="course-menu" class="text-button">'+icon('Grid2X2')+'Explore courses</button>','title');
   const select=n=>{playerCount=n;title();};
   $('solo').onclick=()=>select(1);$('duo').onclick=()=>select(2);
   $('primary').onclick=()=>{matchScores={};loadRoom(0);};
+  $('course-menu').onclick=roomMenu;
   document.querySelectorAll('button').forEach(b=>b.disabled=!ready);
 }
 function roomMenu(){
   if(ad||!ready)return;
   const previous=mode;
-  show('<span class="eyebrow">THE COURSE</span><h2>Choose a hole.</h2><div class="room-grid">'+levels.map((l,i)=>'<button data-room="'+i+'" class="'+(saved[i]?'done ':'')+(i===index?'current':'')+'" aria-label="Hole '+(i+1)+': '+l.name+(saved[i]?', best '+saved[i]+' strokes':'')+'">'+String(i+1).padStart(2,'0')+'</button>').join('')+'</div><button id="back" class="secondary">Back</button>','rooms');
-  document.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>loadRoom(Number(b.dataset.room)));
-  $('back').onclick=()=>previous==='title'?title():state.won?resultScreen():resume();
+  function renderGroup(group){
+    const theme=themes[group],start=group*12,holes=levels.slice(start,start+12);
+    const completed=holes.filter((_,i)=>saved[start+i]).length;
+    show('<span class="eyebrow">THE COLLECTION</span><h2>Pick your course.</h2><div class="course-tabs" role="tablist" aria-label="Courses">'+themes.map((t,i)=>'<button role="tab" aria-selected="'+(i===group)+'" data-course="'+i+'" aria-controls="course-holes" id="course-tab-'+i+'"><span class="course-swatch swatch-'+i+'"></span>'+t.short+'</button>').join('')+'</div><div class="course-heading"><strong>'+theme.name+'</strong><span>'+completed+' / '+holes.length+'</span></div><div class="room-grid" role="tabpanel" id="course-holes" aria-labelledby="course-tab-'+group+'">'+holes.map((l,i)=>{const n=start+i;return '<button data-room="'+n+'" class="'+(saved[n]?'done ':'')+(n===index?'current':'')+'" aria-label="Hole '+(n+1)+': '+l.name+(saved[n]?', best '+saved[n]+' strokes':'')+'"><span>'+String(n+1).padStart(2,'0')+'</span><small>'+(saved[n]?icon('Trophy')+' '+saved[n]:'PAR '+l.par)+'</small></button>';}).join('')+'</div><button id="back" class="text-button">'+icon('ChevronLeft')+'Back</button>','rooms');
+    document.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>loadRoom(Number(b.dataset.room)));
+    document.querySelectorAll('[data-course]').forEach(b=>{
+      b.onclick=()=>{renderGroup(Number(b.dataset.course));document.querySelector('[data-course="'+b.dataset.course+'"]').focus();};
+      b.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();const next=(group+(e.key==='ArrowRight'?1:themes.length-1))%themes.length;renderGroup(next);document.querySelector('[data-course="'+next+'"]').focus();}};
+    });
+    $('back').onclick=()=>previous==='title'?title():state.won?resultScreen():resume();
+  }
+  renderGroup(levels[index].themeIndex);
 }
 function scoreName(){
   const d=state.shots-levels[index].par;
@@ -124,7 +142,7 @@ function resultScreen(){
   const last=index===levels.length-1;
   const outcome=playerCount===1?scoreName():firstScore===state.shots?'A tie!':firstScore<state.shots?'Player 1 wins!':'Player 2 wins!';
   const summary=playerCount===1?state.shots+' strokes · Par '+levels[index].par+' · Best '+saved[index]:'Player 1: '+firstScore+' · Player 2: '+state.shots;
-  show('<span class="eyebrow">HOLE '+(index+1)+' COMPLETE</span><h2>'+outcome+'</h2><p class="result-summary">'+summary+'</p><button id="next" class="primary">'+(last?'Scorecard':'Next hole')+'</button><button id="again" class="secondary">↻ Replay hole</button>','win');
+  show('<span class="menu-emblem victory">'+icon('Trophy')+'</span><span class="eyebrow">HOLE '+(index+1)+' COMPLETE</span><h2>'+outcome+'</h2><p class="result-summary">'+summary+'</p><button id="next" class="primary">'+(last?'Scorecard':'Next hole')+icon('ArrowRight')+'</button><button id="again" class="text-button">'+icon('RotateCcw')+'Replay hole</button>','win');
   $('next').onclick=()=>last?roomMenu():loadRoom(index+1);
   $('again').onclick=()=>loadRoom(index);
 }
@@ -132,8 +150,9 @@ $('retry').onclick=()=>{if(mode==='play'||mode==='pause')loadRoom(index);};
 $('rooms').onclick=roomMenu;
 $('pause').onclick=()=>mode==='pause'?resume():pause();
 $('sound').onclick=()=>{
-  if(ad)return;sound=!sound;$('sound').textContent=sound?'♪':'♫';
+  if(ad)return;sound=!sound;setIcon('sound',sound?'Volume2':'VolumeX');
   $('sound').setAttribute('aria-label',sound?'Mute sound':'Enable sound');
+  $('sound').title=sound?'Mute sound':'Enable sound';
   $('sound').setAttribute('aria-pressed',String(sound));
   if(sound)tone(660);else audio?.suspend().catch(()=>{});
 };
@@ -153,7 +172,8 @@ window.addEventListener('wheel',e=>{
 },{passive:false});
 class Course extends Phaser.Scene {
   create(){
-    this.g=this.add.graphics();ready=true;
+    this.water=this.add.graphics();this.terrain=this.add.graphics();this.g=this.add.graphics();
+    this.drawnLevel=null;this.trail=[];this.waterTime=-1000;ready=true;
     const canvas=this.game.canvas;
     const point=e=>{const r=canvas.getBoundingClientRect();return {x:((e.clientX-r.left)*view.width/r.width-view.x)/view.scale,y:((e.clientY-r.top)*view.height/r.height-view.y)/view.scale};};
     const cancel=()=>{aim=null;hud();};
@@ -182,6 +202,8 @@ class Course extends Phaser.Scene {
         cancel();this.scale.resize(Math.floor(r.width),Math.floor(r.height));
         view=courseView(levels[index],this.scale.width,this.scale.height);
         this.g.setPosition(view.x,view.y).setScale(view.scale);
+        this.terrain.setPosition(view.x,view.y).setScale(view.scale);
+        this.waterTime=-1000;
       }
     });
     resize.observe(canvas.parentElement);
@@ -209,9 +231,18 @@ class Course extends Phaser.Scene {
     particles=particles.filter(p=>p.life>0);
     view=courseView(levels[index],this.scale.width,this.scale.height);
     this.g.setPosition(view.x,view.y).setScale(view.scale);
-    drawCourse(this.g,levels[index],state,aim,particles,time,reduced,player);
+    this.terrain.setPosition(view.x,view.y).setScale(view.scale);
+    if(this.drawnLevel!==index){drawTerrain(this.terrain,levels[index]);this.drawnLevel=index;this.trail=[];this.waterTime=-1000;}
+    if(this.waterTime<0||(!reduced&&time-this.waterTime>100)){
+      drawWater(this.water,this.scale.width,this.scale.height,themes[levels[index].themeIndex],time,reduced);this.waterTime=time;
+    }
+    if(state.moving&&mode==='play'&&!ad){this.trail.push({x:state.x,y:state.y});if(this.trail.length>9)this.trail.shift();}
+    else this.trail=[];
+    drawCourse(this.g,levels[index],state,aim,particles,time,reduced,player,this.trail);
   }
 }
+setIcon('sound','VolumeX');setIcon('pause','Pause');setIcon('retry','RotateCcw');
+$('brand-mark').innerHTML=icon('FlagTriangleRight');
 title();
 initPlatform().then(()=>new Phaser.Game({
   type:Phaser.AUTO,parent:'canvas',width:600,height:650,backgroundColor:'#93c8dc',banner:false,
@@ -224,7 +255,7 @@ const context=document.modelContext;
 if(context?.registerTool)try{
   context.registerTool({name:'get_bankshot_room',description:'Read golf hole, strokes, player, and ball state.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},
     execute:()=>({room:index+1,name:levels[index].name,shots:state.shots,mode,moving:state.moving,puck:{x:state.x,y:state.y},adPending:ad,aiming:!!aim,player:player+1,players:playerCount,firstScore,matchScores,view})});
-  context.registerTool({name:'start_bankshot_room',description:'Start a mini golf hole from 1 to 18.',inputSchema:{type:'object',properties:{room:{type:'integer',minimum:1,maximum:18}},required:['room'],additionalProperties:false},
-    execute:async input=>{if(!Number.isInteger(input.room)||input.room<1||input.room>18)throw new Error('Choose a hole from 1 to 18.');if(ad)throw new Error('Wait for the transition.');await loadRoom(input.room-1);return {room:index+1,mode};}});
+  context.registerTool({name:'start_bankshot_room',description:'Start a mini golf hole from 1 to '+levels.length+'.',inputSchema:{type:'object',properties:{room:{type:'integer',minimum:1,maximum:levels.length}},required:['room'],additionalProperties:false},
+    execute:async input=>{if(!Number.isInteger(input.room)||input.room<1||input.room>levels.length)throw new Error('Choose a hole from 1 to '+levels.length+'.');if(ad)throw new Error('Wait for the transition.');await loadRoom(input.room-1);return {room:index+1,mode};}});
 }catch{}
 }

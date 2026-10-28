@@ -21,7 +21,7 @@ try{
   await page.mouse.move(x,y+pull*v.scale,{steps:35});await page.waitForTimeout(500);await page.mouse.up();
   await page.locator('#next').waitFor();await page.waitForTimeout(800);
   await page.locator('#next').click();await page.waitForTimeout(1200);
-  await page.evaluate(()=>gameTools.start_bankshot_room.execute({room:10}));
+  await page.evaluate(()=>gameTools.start_bankshot_room.execute({room:20}));
   await page.waitForTimeout(300);
   await page.screenshot({path:'release/Pocket-Putt-gameplay.png'});
   await page.waitForTimeout(1500);
@@ -33,7 +33,7 @@ try{
     window.gameTools={};Object.defineProperty(document,'modelContext',{value:{registerTool(t){gameTools[t.name]=t;}}});
   });
   await art.goto('http://127.0.0.1:5188/');await art.locator('#primary:enabled').click();
-  await art.evaluate(()=>gameTools.start_bankshot_room.execute({room:10}));
+  await art.evaluate(()=>gameTools.start_bankshot_room.execute({room:29}));
   // Capture the game's real renderer, without HUD text, as a square thumbnail.
   await art.addStyleTag({content:'header,.hud,footer{display:none!important}#app{width:100%;height:100dvh;max-height:none;display:block}#board{width:100%;height:100%}'});
   await art.setViewportSize({width:801,height:801});

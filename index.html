@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#93c8dc">
-  <meta name="description" content="Pull back, putt, and play 18 miniature golf holes solo or with a friend on the same device.">
+  <meta name="theme-color" content="#b8dfd6">
+  <meta name="description" content="A little golf getaway. Play 36 miniature golf holes across three courses, solo or with a friend.">
   <title>Pocket Putt</title>
 </head>
 <body>
   <main id="app">
     <header>
-      <div class="brand">Pocket Putt<span>MINI GOLF</span></div>
+      <div class="brand"><span id="brand-mark" aria-hidden="true"></span><div>Pocket Putt<span id="themeName">THE GARDEN CLUB</span></div></div>
       <div class="tools">
         <button id="sound" aria-label="Enable sound" aria-pressed="false" title="Sound">♫</button>
         <button id="pause" aria-label="Pause game" title="Pause">Ⅱ</button>
       </div>
     </header>
     <section class="hud" aria-label="Score">
-      <button id="rooms" class="room-button" title="Choose a hole"><small>HOLE <span id="roomNo">01</span> / 18</small><strong id="roomName">The first putt</strong></button>
+      <button id="rooms" class="room-button" title="Choose a hole"><small>HOLE <span id="roomNo">01</span> / <span id="totalHoles">36</span></small><strong id="roomName">The first putt</strong></button>
       <div class="stat"><small>STROKES</small><strong id="shots">0</strong></div>
       <div class="stat"><small>PAR</small><strong id="par">2</strong></div>
       <div class="stat best-stat"><small id="bestLabel">BEST</small><strong id="best">—</strong></div>
@@ -28,7 +28,7 @@
     </section>
     <footer>
       <div class="status"><span id="turn">Solo</span><span id="hint">Your putt</span><meter id="power" min="0" max="100" value="0" aria-label="Putt power"></meter></div>
-      <span id="progress">0 / 18 completed</span>
+      <span id="progress">0 / 36 completed</span>
       <button id="retry" title="Restart hole" aria-label="Restart hole">↻</button>
     </footer>
   </main>

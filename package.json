@@ -13,6 +13,7 @@
     "test:devices": "node tests/devices-qa.mjs"
   },
   "dependencies": {
+    "lucide": "1.62.0",
     "phaser": "3.90.0"
   },
   "devDependencies": {

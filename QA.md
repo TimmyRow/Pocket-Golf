@@ -3,7 +3,7 @@
 ## Current scope
 
 The star-collection prototype has been replaced by open-cup miniature golf.
-All 18 courses use shaped fairways. The input is now pull-back-and-release,
+All 36 courses use shaped fairways. The input is now pull-back-and-release,
 not forward flicking. Old puzzle scores are not reused.
 
 ## Physics checks
@@ -12,7 +12,7 @@ not forward flicking. Old puzzle scores are not reused.
 - Predictions do not mutate live state.
 - Cups accept gentle putts immediately; fast putts can roll past.
 - Water restores the previous lie without losing the counted stroke.
-- All 18 holes are completed by routes executed through the real physics.
+- All 36 holes are completed by routes executed through the real physics.
 - Pull-back direction, offset grabs, tiny drags, and already-sunk balls are checked.
 - Full-power shots at sampled angles stay inside every shaped fairway.
 - Every course fits portrait phone, landscape phone, tablet, and desktop dimensions.
@@ -54,7 +54,7 @@ GitHub Actions runs the physics, browser, and device suites before deployment.
 
 ## Poki distribution checks (2026-10-27)
 
-All 49 local checks passed: 9 physics, 16 browser scenarios, 14 device
+All 52 local checks passed: 10 physics, 18 browser scenarios, 14 device
 configurations, and 10 compiled Poki scenarios. The compiled suite checks
 the required 16:9 embeds, small phones, tablets, clean assets without test
 hooks, SDK lifecycle sequencing, ad input blocking, fallback behavior, and

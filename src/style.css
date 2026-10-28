@@ -1,48 +1,97 @@
-:root{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#23443c;background:#93c8dc;font-synthesis:none}
+:root{font-family:"Segoe UI",system-ui,sans-serif;font-synthesis:none;--water:#b8dfd6;--ink:#234b41;--muted:#547b6d;--panel:#f7fbf4;--accent:#d95142;--line:#92beb0;--soft:#e5eee0;color:var(--ink);background:var(--water)}
 *{box-sizing:border-box;letter-spacing:0}
 body{margin:0;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-button{font:inherit;color:inherit;cursor:pointer;border:0;touch-action:manipulation}
-button:focus-visible{outline:3px solid #d85748;outline-offset:3px}
+button{font:inherit;color:inherit;cursor:pointer;border:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 button:disabled{opacity:.5;cursor:wait}
-#app{height:calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));max-height:1000px;width:min(100%,720px);margin:auto;display:grid;grid-template-rows:64px 72px minmax(0,1fr) 64px}
-header{display:flex;justify-content:space-between;align-items:center;padding:8px 20px}
-.brand{font-size:23px;font-weight:900;line-height:1.1}.brand span{display:block;font-size:9px;margin-top:4px;color:#376373}
-.tools{display:flex;gap:8px}.tools button,footer button{background:#f4faf4;border:1px solid #729eaa;border-radius:8px;width:44px;height:44px;font-size:22px}
-.tools button:hover,footer button:hover{background:white}
-.hud{display:flex;align-items:center;gap:20px;padding:12px 20px;background:#f4faf4;border-top:1px solid #ffffffaa;border-bottom:1px solid #78a4ae}
+button svg{flex:none;vertical-align:middle;pointer-events:none}
+button:not(:disabled):active{transform:translateY(1px)}
+#app{height:calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));width:100%;margin:auto;display:grid;grid-template-rows:76px 78px minmax(0,1fr) 64px}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 28px;background:var(--panel)}
+.brand{display:flex;align-items:center;gap:12px;font-family:"Trebuchet MS","Segoe UI",sans-serif;font-size:26px;font-weight:900;line-height:1.1}
+#brand-mark{display:grid;place-items:center;color:var(--accent);width:36px;height:40px}
+#brand-mark svg{width:34px;height:34px}
+#themeName{display:block;font-family:"Segoe UI",sans-serif;font-size:9px;font-weight:700;margin-top:6px;color:var(--muted)}
+.tools{display:flex;gap:8px}
+.tools button,footer button{display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;width:44px;height:44px}
+.tools button:hover,footer button:hover{background:var(--soft)}
+.hud{display:flex;align-items:center;gap:28px;padding:10px 30px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel)}
 .room-button{background:none;flex:1;text-align:left;min-width:0;padding:0;min-height:44px}
-.hud small{display:block;font-size:9px;font-weight:700;color:#5d7971;margin-bottom:3px}
-.room-button strong{display:block;font-size:16px;overflow-wrap:anywhere;line-height:1.2}
-.stat{min-width:30px}.stat strong{font-size:25px;font-variant-numeric:tabular-nums;font-weight:800}.best-stat strong{color:#b66a23}
-#board{position:relative;min-height:0}#canvas{position:absolute;inset:0}canvas{display:block;touch-action:none}
-.overlay{position:absolute;inset:0;display:grid;place-items:center;padding:14px;background:#204c424d;backdrop-filter:blur(2px);overflow:auto}
-.overlay.hidden{display:none}.card{background:#f6faf4;color:#23443c;width:min(100%,340px);border:1px solid #ffffff;border-radius:8px;padding:26px;box-shadow:0 14px 36px #204c4229;text-align:center;max-height:100%;overflow:auto}
-.eyebrow{font-size:10px;font-weight:800;color:#6a8074}.card h2{font-size:30px;line-height:1.15;margin:12px 0 22px;overflow-wrap:anywhere}.card p{font-size:13px;color:#63766b;line-height:1.5}
-.primary{width:100%;min-height:46px;background:#e76957;color:#fff;font-weight:800;border-radius:7px;margin-top:12px}.primary:hover{background:#d85748}
-.secondary{min-height:42px;padding:8px 12px;background:#e3ede1;border-radius:6px;margin:12px 4px 0;font-size:13px;font-weight:700}
-.player-options{display:grid;grid-template-columns:1fr 1fr;background:#e3ede1;border-radius:7px;padding:4px;gap:4px}.player-options button{background:none;border-radius:5px;min-height:40px;font-weight:700;font-size:13px}.player-options button[aria-pressed="true"]{background:#2c6a52;color:white}
+.hud small{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px}
+.room-button strong{display:block;font-size:18px;overflow-wrap:anywhere;line-height:1.2}
+.stat{min-width:42px}.stat strong{font-size:29px;font-variant-numeric:tabular-nums;font-weight:800;line-height:1.2}
+.best-stat strong{color:var(--accent)}
+#board{position:relative;min-height:0;overflow:hidden}#canvas{position:absolute;inset:0}canvas{display:block;touch-action:none}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;padding:14px;background:#173e3826;backdrop-filter:blur(1px);overflow:auto}
+.overlay.hidden{display:none}
+.card{background:var(--panel);color:var(--ink);width:min(100%,380px);border:1px solid var(--line);border-radius:8px;padding:26px;box-shadow:0 18px 40px #173e3830;text-align:center;max-height:100%;overflow:auto;overscroll-behavior:contain;animation:arrive .18s ease-out}
+@keyframes arrive{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.menu-emblem{display:block;color:var(--accent);height:40px;margin:0 auto 8px}
+.menu-emblem svg{width:34px;height:34px}.victory{color:#c2912e}
+.eyebrow{display:block;font-size:9px;font-weight:800;color:var(--muted)}
+.card h2{font-family:"Trebuchet MS","Segoe UI",sans-serif;font-size:31px;line-height:1.1;margin:10px 0 20px;overflow-wrap:anywhere}
+.card p{font-size:13px;color:var(--muted);line-height:1.5}
+.primary{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:46px;background:var(--accent);color:#fff;font-weight:800;border-radius:6px;margin-top:12px;box-shadow:0 3px 0 #782c2820}
+.primary:hover{filter:brightness(1.06)}
+.secondary{min-height:42px;padding:8px 12px;background:var(--soft);border-radius:6px;margin:12px 4px 0;font-size:13px;font-weight:700}
+.text-button{display:flex;align-items:center;justify-content:center;gap:8px;background:none;min-height:38px;margin:8px auto 0;padding:5px 8px;font-size:12px;font-weight:700;color:var(--muted)}
+.text-button:hover{color:var(--ink)}.text-button svg{width:16px;height:16px}
+.player-options{display:grid;grid-template-columns:1fr 1fr;background:var(--soft);border-radius:6px;padding:4px;gap:4px}
+.player-options button{display:flex;align-items:center;justify-content:center;gap:8px;background:none;border-radius:4px;min-height:40px;font-weight:700;font-size:13px}
+.player-options button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
 .mode-label{margin:14px 0 4px}
-.room-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.room-grid button{aspect-ratio:1;min-height:34px;background:#e3ede1;border-radius:5px;font-variant-numeric:tabular-nums}.room-grid button.done{background:#9fce99}.room-grid button.current{outline:2px solid #d85748}
-footer{display:flex;align-items:center;gap:12px;padding:8px 20px;background:#f4faf4;border-top:1px solid #78a4ae}
-.status{flex:1;min-width:0;display:grid;grid-template-columns:auto 1fr;column-gap:10px;row-gap:5px;font-size:11px}
-#turn{font-weight:800}#hint{color:#5d7971}#progress{font-size:10px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.course-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;border-bottom:1px solid var(--line)}
+.course-tabs button{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:42px;padding:6px 2px;background:none;font-size:12px;font-weight:700;border-bottom:3px solid transparent}
+.course-tabs button[aria-selected="true"]{border-color:var(--accent)}
+.course-swatch{width:10px;height:10px;border-radius:50%;border:1px solid #ffffff70;flex:none}
+.swatch-0{background:#70b967}.swatch-1{background:#38afbe}.swatch-2{background:#c28eaa}
+.course-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px 0 12px;font-size:13px}
+.course-heading span{font-size:11px;color:var(--muted)}
+.room-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.room-grid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:56px;background:var(--soft);border:1px solid transparent;border-radius:5px;font-variant-numeric:tabular-nums}
+.room-grid button>span{font-size:19px;font-weight:800}.room-grid small{font-size:8px;font-weight:700;color:var(--muted)}
+.room-grid small svg{width:10px;height:10px}
+.room-grid button.done{background:#c8df9f;color:#345238}.room-grid button.done small{color:#345238}
+.room-grid button.current{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+footer{display:flex;align-items:center;gap:16px;padding:8px 28px;background:var(--panel);border-top:1px solid var(--line)}
+.status{flex:1;min-width:0;display:grid;grid-template-columns:auto 1fr;column-gap:12px;row-gap:5px;font-size:11px}
+#turn{font-weight:800}#hint{color:var(--muted)}#progress{font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 meter{grid-column:1/-1;width:100%;max-width:220px;height:7px;appearance:none}
-meter::-webkit-meter-bar{border:0;background:#dce8dd;border-radius:4px}meter::-webkit-meter-optimum-value{background:#e5ab45;border-radius:4px}meter::-moz-meter-bar{background:#e5ab45}
-@media(max-width:480px){#app{grid-template-rows:56px 66px minmax(0,1fr) 60px}header,.hud,footer{padding-left:14px;padding-right:14px}.hud{gap:13px}.room-button strong{font-size:14px}.stat strong{font-size:22px}.hud small{font-size:8px}.brand{font-size:21px}.card{padding:22px}.card h2{font-size:27px}}
+meter::-webkit-meter-bar{border:0;background:var(--soft);border-radius:3px}meter::-webkit-meter-optimum-value{background:var(--accent);border-radius:3px}meter::-moz-meter-bar{background:var(--accent)}
+@media(max-width:480px){
+  #app{grid-template-rows:60px 68px minmax(0,1fr) 60px}
+  header,.hud,footer{padding-left:14px;padding-right:14px}
+  .hud{gap:15px}.room-button strong{font-size:14px}.stat{min-width:28px}.stat strong{font-size:23px}.hud small{font-size:8px}
+  .brand{font-size:21px;gap:7px}#brand-mark{width:25px}#brand-mark svg{width:26px;height:26px}#themeName{font-size:8px}
+  .tools{gap:6px}.tools button{width:38px;height:40px}.card{padding:20px}.card h2{font-size:28px}
+  .course-tabs button{font-size:11px}.course-swatch{width:8px;height:8px}
+  footer{gap:10px}#progress{font-size:10px}
+}
+@media(max-height:680px){
+  .menu-emblem{display:none}.card{padding:16px}.card h2{margin:8px 0 14px;font-size:26px}
+  .room-grid button{height:45px}.course-heading{margin:10px 0}.mode-label{margin:10px 0 0}
+}
 @media(orientation:landscape) and (max-height:650px){
-  #app{width:min(100%,1000px);grid-template-columns:170px minmax(0,1fr);grid-template-rows:52px minmax(0,1fr) 100px}
-  header{grid-column:1/-1;padding:5px 16px}
-  .brand{font-size:19px}.brand span{display:none}.tools button{height:36px;width:40px;min-height:36px}
-  .hud{grid-column:1;grid-row:2;display:grid;grid-template-columns:1fr 1fr;align-content:start;gap:10px;padding:14px;border-right:1px solid #78a4ae}
-  .room-button{grid-column:1/-1}.hud .stat strong{font-size:21px}.best-stat{grid-column:1/-1;display:flex;gap:12px;align-items:center}
+  #app{grid-template-columns:160px minmax(0,1fr);grid-template-rows:52px minmax(0,1fr) 100px}
+  header{grid-column:1/-1;padding:5px 16px}.brand{font-size:21px}#themeName{display:none}#brand-mark{height:32px}
+  .tools button{height:36px;width:40px}
+  .hud{grid-column:1;grid-row:2;display:grid;grid-template-columns:1fr 1fr;align-content:start;gap:12px;padding:16px;border-right:1px solid var(--line);border-bottom:0}
+  .room-button{grid-column:1/-1}.room-button strong{font-size:16px}.hud .stat strong{font-size:23px}
+  .best-stat{grid-column:1/-1;display:flex;gap:12px;align-items:center}
   #board{grid-column:2;grid-row:2/4}
-  footer{grid-column:1;grid-row:3;padding:10px 12px;flex-wrap:wrap;gap:5px;border-right:1px solid #78a4ae}
+  footer{grid-column:1;grid-row:3;padding:10px 12px;flex-wrap:wrap;gap:5px;border-top:0;border-right:1px solid var(--line)}
   .status{flex-basis:100%;font-size:10px}footer button{width:32px;height:32px;margin-left:auto}#progress{font-size:9px}
-  .card{width:min(100%,340px);padding:14px 20px}.card h2{font-size:24px;margin:8px 0 12px}.card p{font-size:11px}.primary{min-height:38px;margin-top:8px}.secondary{min-height:34px;margin-top:8px}.room-grid button{min-height:26px}
+  .card{width:min(100%,380px);padding:14px 18px}.card h2{font-size:24px;margin:6px 0 12px}.card p{font-size:11px}
+  .primary{min-height:38px;margin-top:8px}.secondary{min-height:34px;margin-top:8px}.text-button{min-height:32px;margin-top:4px}
+}
+html.poki #app{padding-left:54px}
+@media(min-width:1211px){html.poki #app{padding-left:98px}}
+@media(max-width:380px){
+  html.poki #brand-mark{display:none}
+  html.poki .hud{gap:8px;padding-left:8px;padding-right:8px}
+  html.poki header{padding-left:10px;padding-right:10px}
+  html.poki footer{padding-left:8px;padding-right:8px;gap:6px}
+  html.poki .status{font-size:10px}html.poki #progress{font-size:9px}
+  html.poki .card{padding:12px}.course-tabs button{gap:4px}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-/* Leave the SDK's left-edge navigation pill clear of game controls. */
-html.poki #app{width:100%;max-height:none;padding-left:54px}
-.card{overscroll-behavior:contain}
-@media(min-width:1211px){html.poki #app{padding-left:98px}}
-@media(max-width:380px){html.poki .hud{gap:8px;padding-left:8px;padding-right:8px}html.poki .room-grid{grid-template-columns:repeat(5,minmax(0,1fr))}html.poki footer{padding-left:8px;padding-right:8px;gap:6px}html.poki .status{font-size:10px}html.poki #progress{font-size:9px}}

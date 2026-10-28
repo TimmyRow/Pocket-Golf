@@ -75,7 +75,8 @@ for(const [name,engine,width,height,touch] of cases){
     await page.screenshot({path:'qa/device-'+name+'.png'});
     await page.setViewportSize({width:height,height:width});await page.waitForTimeout(220);await geometry();
     await page.locator('#rooms').click();
-    await page.locator('[data-room="17"]').click();
+    await page.locator('[data-course="2"]').click();
+    await page.locator('[data-room="35"]').click();
     await page.waitForTimeout(100);await geometry();
     await page.locator('#pause').click();await page.locator('#resume').click();
     assert.equal((await read()).mode,'play');assert.deepEqual(errors,[]);

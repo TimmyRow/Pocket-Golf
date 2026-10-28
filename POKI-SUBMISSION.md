@@ -8,13 +8,13 @@
 - Source repository: https://github.com/TimmyRow/Pocket-Golf
 - Players: solo or two-player local pass-and-play on the same device
 - Controls: mouse or touch; drag backward from the ball and release to putt
-- Content: 18 original miniature-golf courses, bank shots, bumpers, and water
+- Content: 36 original miniature-golf courses, bank shots, bumpers, and water
 - Saving: solo best scores stay in the player's browser. No account or server sync.
 - Release status: publicly playable on GitHub Pages; not released or approved on Poki.
 
 Description:
 
-Pocket Putt is a pull-back-and-release mini-golf game across 18 shaped courses.
+Pocket Putt is a pull-back-and-release mini-golf game across 36 shaped courses.
 Judge your power, bounce off the rails, and navigate bumpers and water to reach
 the cup in fewer strokes. Chase personal bests alone or take turns with a friend
 in same-device two-player matches.
@@ -46,12 +46,12 @@ external fonts, analytics, logins, or links in the game.
 
 ## Verification and remaining checks
 
-On October 27, 2026, all 49 local automated checks passed. A live Poki Inspector
+On October 27, 2026, all 52 local automated checks passed. A live Poki Inspector
 smoke test completed a hole, advanced, and paused with the expected SDK events
 and no warnings detected. This does not cover every Inspector checklist item
 or a full displayed-ad test.
 
-Automated coverage includes all 18 solvable holes, saved best scores, blocked
+Automated coverage includes all 36 solvable holes, saved best scores, blocked
 storage, cancel/outside-canvas dragging, rotation, two-player scoring, and
 Chromium/WebKit/Firefox layouts. Compiled Poki tests cover 640x360, 836x470,
 1031x580, 320x568, 375x667, 1024x768, and 1366x1024, ad lifecycle sequencing,
